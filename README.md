@@ -18,6 +18,8 @@ Plan des Pin disponibles ici : http://wiringpi.com/pins/
 
 * Faire un "Make" dans le répertoire master ce qui doit vous compiler un ydlemaster a lancer par un : sudo ./ydlemaster
 
+documentation complète disponible ici : http://wiki.ydle.fr/doku.php
+
 
 ENGLISH VERSION :
 
@@ -37,3 +39,5 @@ emission : GPIO 6
 Pins' mapping is available here : http://wiringpi.com/pins/
 
 * You'll have to run a "Make" command in the master directory. This command should compile the ydlemaster, an executable that you can run with : sudo ./ydlemaster
+
+Complete documentation is available : http://wiki.ydle.fr/doku.php
