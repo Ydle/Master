@@ -1,0 +1,29 @@
+Port par défaut : 8888
+
+Tout doit être en minuscule ! (le master est sensible à la casse)
+
+Send On :
+Code : GET /node/on?target=255&sender=105&nid=12
+
+nid = Id de la node
+target = Id de la node à atteindre
+sender = Id du master
+------------------------------------------------------
+Send Off :
+Code : GET /node/off?target=255&sender=105&nid=12
+
+nid = Id de la node
+target = Id de la node à atteindre
+sender = Id du master
+------------------------------------------------------
+Send Reset :
+Code : GET /node/reset?target=255&sender=105
+
+target = Id de la node à atteindre
+sender = Id du master
+------------------------------------------------------
+Send Link :
+Code : GET /node/link?target=255&sender=105
+
+target = Id de la node à atteindre
+sender = Id du master
