@@ -66,6 +66,26 @@ unsigned char  protocolRF::crc8(unsigned char* buf, int len)
 	return crc ^ final;
 }
 
+unsigned char protocolRF::computeCrc(Frame_t* frame){
+	unsigned char *buf, crc;
+	int a,j;
+
+	buf = (unsigned char*)malloc(frame->taille+3);
+	memset(buf, 0x0, frame->taille+3);
+
+	buf[0] = frame->sender;
+	buf[1] = frame->receptor;
+	buf[2] = frame->type;
+	buf[2] = buf[2] << 5;
+	buf[2] |= frame->taille;
+
+	for(a=3, j=0 ;j < frame->taille - 1;a++, j++){
+		buf[a] = frame->data[j];
+	}
+	crc = crc8(buf,frame->taille+3);
+	free(buf);
+	return crc;
+}
 
 //
 // ----------------------------------------------------------------------------
@@ -261,13 +281,16 @@ void protocolRF::sendBit(bool b)
 // ----------------------------------------------------------------------------
 void protocolRF::transmit(bool bRetransmit)
 {
-	int i = 0;
 	int j = 0;
 	int a = 0;
-
+	int i = 0;
+	unsigned char crc;
 	// calcul crc
+
 	m_sendframe.taille++; // add crc BYTE
-	m_sendframe.crc=crc8((unsigned char*)&m_sendframe,m_sendframe.taille+3);
+	crc = computeCrc(&m_sendframe);
+
+	m_sendframe.crc = crc;
 
 	itob(m_sendframe.sender,0,8);
 	itob(m_sendframe.receptor,8,8);
@@ -279,9 +302,6 @@ void protocolRF::transmit(bool bRetransmit)
 	}
 
 	itob(m_sendframe.crc,24+(8*a),8);
-
-
-	printFrame(m_sendframe);
 
 	// If CMD then wait	 for ACK ONLY IF it's not already a re-retramit
 	if((m_sendframe.type==TYPE_CMD)&&(!bRetransmit))
@@ -299,6 +319,13 @@ void protocolRF::transmit(bool bRetransmit)
 
 	//Lock reception when we end something
 	pthread_mutex_lock(&g_mutexSynchro);
+
+	struct sched_param p;
+	p.__sched_priority = sched_get_priority_max(SCHED_RR);
+	if (sched_setscheduler(0, SCHED_RR, &p) == -1) {
+		perror("Failed to switch to realtime scheduler.");
+	}
+
 
 	// Sequence AGC
 	for (int x=0; x<16; x++)
@@ -321,6 +348,11 @@ void protocolRF::transmit(bool bRetransmit)
 	}
 
 	digitalWrite(m_pinTx, LOW);
+
+	p.__sched_priority = 0;
+	if (sched_setscheduler(0, SCHED_OTHER, &p) == -1) {
+		perror("Failed to switch to normal scheduler.");
+	}
 
 	//unLock reception when we finished
 	pthread_mutex_unlock(&g_mutexSynchro);
@@ -695,8 +727,14 @@ void protocolRF::pll()
 				m_receivedframe.type = type;
 				m_receivedframe.taille = rx_bytes_count;
 				memcpy(m_receivedframe.data,m_data,rx_bytes_count-1); // copy data len - crc
-				m_receivedframe.crc=0;
-				if(crc8((unsigned char*)&m_receivedframe,m_receivedframe.taille+3) != m_data[rx_bytes_count-1])
+				m_receivedframe.crc = 0;
+
+				// crc calcul
+				unsigned char crc;
+				crc = computeCrc(&m_receivedframe);
+				m_receivedframe.crc = m_data[rx_bytes_count-1];
+				this->printFrame(m_receivedframe);
+				if(crc != m_data[rx_bytes_count-1])
 				{	
 					if(debugActivated)
 						YDLE_DEBUG << ("crc error!!!!!!!!!");
@@ -704,8 +742,7 @@ void protocolRF::pll()
 				else
 				{
 					m_rx_done = true;
-					m_receivedframe.crc = crc8((unsigned char*)&m_receivedframe,m_receivedframe.taille+3);
-					//printFrame(m_receivedframe);
+					m_receivedframe.crc = crc;
 				}
 				length_ok = 0;
 				sender = 0;
@@ -748,6 +785,14 @@ void* protocolRF::listenSignal(void* pParam)
 	int err = 0;
 	YDLE_DEBUG << "Enter in thread listen";
 	protocolRF* parent=(protocolRF*)pParam;
+
+	struct sched_param p;
+
+	p.__sched_priority = sched_get_priority_max(SCHED_RR);
+	if (sched_setscheduler(0, SCHED_RR, &p) == -1) {
+		perror("Failed to switch to realtime scheduler.");
+	}
+
 
 	if (pParam)
 	{
@@ -820,6 +865,12 @@ void* protocolRF::listenSignal(void* pParam)
 		}	
 
 	}
+
+	p.__sched_priority = 0;
+	if (sched_setscheduler(0, SCHED_OTHER, &p) == -1) {
+		perror("Failed to switch to normal scheduler.");
+	}
+
 	YDLE_INFO << "Exit of thread listen";
 	return NULL;
 }
@@ -885,13 +936,12 @@ void protocolRF::itob(unsigned long integer, int start, int length)
 // ----------------------------------------------------------------------------
 void protocolRF::dataToFrame(unsigned long Receiver, unsigned long Transmitter, unsigned long type)
 {
+	memset(m_sendframe.data,0,sizeof(m_sendframe.data));
 	m_sendframe.sender=Transmitter;
 	m_sendframe.receptor=Receiver;
 	m_sendframe.type=type;
 	m_sendframe.taille=0;
 	m_sendframe.crc=0;
-	memset(m_sendframe.data,0,sizeof(m_sendframe.data));
-
 } 
 
 

@@ -24,8 +24,8 @@ public:
 	void run();
 	void start();
 	void stop();
-	int putFrame(protocolRF::Frame_t frame);
-	int extractData(protocolRF::Frame_t frame, int index,int &itype,int &ivalue);
+	int putFrame(protocolRF::Frame_t& frame);
+	int extractData(protocolRF::Frame_t& frame, int index,int &itype,int &ivalue);
 private:
 	list<protocolRF::Frame_t> *ListCmd;
 	pthread_mutex_t *mutex_listcmd;

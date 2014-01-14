@@ -54,15 +54,22 @@ void IhmCommunicationThread::run(){
 		sleep(1);
 	}
 }
-int IhmCommunicationThread::putFrame(protocolRF::Frame_t frame){
+int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
+	std::string  post_data;
+	std::stringstream buf;
+	int value;int type;int sender;
 
-	int value;int type;
-	YDLE_DEBUG << "Data received : From "<< (int)frame.sender << " Type : "<< type << " Value : " << value << "\n";
+	sender = (int)frame.sender;
+	// TODO: Need a better method to get the data
 	this->extractData(frame, 1, type, value);
+	YDLE_DEBUG << "Data received : From "<< (int)frame.sender << " Type : "<< type << " Value : " << value << "\n";
+
 	RestBrowser browser(this->web_address);
 	std::stringstream request;
-	request << "/api/node/" << (int)frame.sender << "/" << type << "/" << value;
-	browser.doGet(request.str(), "");
+	request << "/api/node/data";
+	buf << "sender:" <<  (int)frame.sender << "\r\ntype:" << type << "\r\nvalue=" << value;
+
+	browser.doPost(request.str(), buf.str());
 	YDLE_DEBUG << "Url :" << request.str();
 
 	return 1;
@@ -78,7 +85,7 @@ void IhmCommunicationThread::stop(){
  * Extract the value from the frame
  * Yes, I know this function should not be here. Denia.
  * */
-int IhmCommunicationThread::extractData(protocolRF::Frame_t frame, int index,int &itype,int &ivalue)
+int IhmCommunicationThread::extractData(protocolRF::Frame_t & frame, int index,int &itype,int &ivalue)
 {
 	uint8_t* ptr;
 	bool bifValueisNegativ=false;

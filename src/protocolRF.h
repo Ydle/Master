@@ -110,7 +110,7 @@ public:
 
 	// Envoie des verrous et des bits formant une trame
 	void transmit(bool bRetransmit = false);
-
+	unsigned char computeCrc(Frame_t* frame);
 
 protected:
 

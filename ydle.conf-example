@@ -1,0 +1,13 @@
+master: {
+	# Port on which the master is listening
+	port = "8888";
+	# Tx Pin (wiringPi)
+	tx_pin = "0";
+	# Rx Pin (wiringPi)
+	rx_pin = "1";
+	# Address and port of IHM
+	ihm_address = "127.0.0.1";
+	ihm_port = "80";
+	#ignored parameter but needed
+	address = "127.0.0.1";
+}

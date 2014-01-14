@@ -1,0 +1,21 @@
+Bibliothéques nécéssaires :
+- wiringPi
+- microhttpd 
+- jsoncpp
+- curl
+- libconfig++
+
+Pour les installer :
+aptitude install libmicrohttpd-dev libjsoncpp-dev libcurl4-openssl-dev libconfig++-dev
+
+Pensez à créer un fichier de configuration !
+Exemple disponible dans ydle.conf-example
+
+Plan des Pin disponibles ici : http://wiringpi.com/pins/
+
+Pour le lancement :
+$ ./configure
+$ make
+$ sudo ./src/ydlemaster -c ydle.conf
+
+

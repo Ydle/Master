@@ -6,29 +6,26 @@
  * @license CC by SA
  **/
 
-#ifdef RASPBERRY
+
 #include <wiringPi.h>
-#else
-#include <unistd.h>
-#endif
 
 #include "master.h"
 
 #include <cstring>
+#include <sstream>
 #include <pthread.h>
 #include <time.h>
 #include <signal.h>
 #include <map>
 
-
+#include "SettingsParser.h"
 #include "IhmCommunicationThread.h"
 #include "logging.h"
 #include "webServer.h"
-
 #include "NodeRequestHandler.h"
 
 #define DEFAULT_HTTP_PORT 8888
-#define DEFAULT_IHM_ADDRESS "192.168.1.9"
+#define DEFAULT_IHM_ADDRESS "127.0.0.1"
 
 using namespace std;
 
@@ -131,6 +128,7 @@ void exit_handler(int s) {
 	exit(1);
 }
 
+
 // ----------------------------------------------------------------------------
 /**
  Routine: main()
@@ -143,7 +141,27 @@ void exit_handler(int s) {
  */
 // ----------------------------------------------------------------------------
 int main(int argc, char** argv) {
+	// Init logging system
 	ydle::InitLogging(ydle::YDLE_LOG_DEBUG, ydle::YDLE_LOG_STDERR);
+
+	// Parse command line and config file
+	ydle::SettingsParser* s;
+
+	s = new ydle::SettingsParser();
+
+	if(s->parseCommandLine(argc, argv) == 0){
+		return 0;
+	}
+
+	if(s->parseConfigFile() == 0){
+		return 0;
+	}
+
+	map<string, string> master_config;
+	master_config = s->getConfig();
+	if(master_config.size() == 0){
+		return 0;
+	}
 
 	if (setuid(0)) {
 		perror("setuid");
@@ -164,17 +182,20 @@ int main(int argc, char** argv) {
 	YDLE_DEBUG << "Program start";
 	//End the program if the wiringPi library is not found
 	if (wiringPiSetup() == -1) {
-		YDLE_FATAL << ("Lib Wiring PI not found...");
+		YDLE_FATAL << "Error : Library wiringPi not found" << std::endl;
 		return -1;
 	}
+	int rx_pin = atoi(master_config["rx_pin"].c_str());
+	int tx_pin = atoi(master_config["tx_pin"].c_str());
 
-	g_ProtocolRF = new protocolRF(g_pinRx, g_pinTx);
+	g_ProtocolRF = new protocolRF(rx_pin, tx_pin);
 
 	// comment if you don't want debug
 	g_ProtocolRF->debugMode();
 
 	WebServer::HTTPServer::HTTPServerOptions options;
-	options.port = DEFAULT_HTTP_PORT;
+	int port = atoi(master_config["port"].c_str());
+	options.port = port;
 
 	// Launch webserver
 	WebServer::HTTPServer *server;
@@ -195,7 +216,9 @@ int main(int argc, char** argv) {
 		server->Init();
 		server->Run();
 
-		ydle::IhmCommunicationThread com(DEFAULT_IHM_ADDRESS, &ListCmd, &listcmd_mutex);
+		std::stringstream temp;
+		temp << master_config["ihm_address"] << ":" << master_config["ihm_port"];
+		ydle::IhmCommunicationThread com(temp.str(), &ListCmd, &listcmd_mutex);
 		com.start();
 
 		// TODO: (Denia) Temporaire
