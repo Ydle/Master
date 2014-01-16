@@ -8,11 +8,9 @@
 
 #include "logging.h"
 
-
-
 using namespace std;
 
-#define TIME_OUT_ACK  500000 //microsecondl
+#define TIME_OUT_ACK  5000000 //microsecondl
 
 static list<protocolRF::ACKCmd_t> ListACK;
 
@@ -303,17 +301,16 @@ void protocolRF::transmit(bool bRetransmit)
 
 	itob(m_sendframe.crc,24+(8*a),8);
 
-	// If CMD then wait	 for ACK ONLY IF it's not already a re-retramit
-	if((m_sendframe.type==TYPE_CMD)&&(!bRetransmit))
-	{
+	// If CMD then wait	 for ACK ONLY IF it's not already a re-retransmit
+	if(m_sendframe.type == TYPE_CMD && !bRetransmit) {
 		struct timeval localTime;
 		ACKCmd_t newack;
 
 		memcpy(&newack.Frame,&m_sendframe,sizeof(Frame_t));
 		newack.iCount=0;
 		gettimeofday(&localTime, NULL); 
-		newack.Time=localTime.tv_sec * 1000000;
-		newack.Time+=localTime.tv_usec;
+		newack.Time = localTime.tv_sec * 1000000;
+		newack.Time += localTime.tv_usec;
 		ListACK.push_back(newack);
 	}
 
@@ -783,16 +780,14 @@ void protocolRF::pll()
 void* protocolRF::listenSignal(void* pParam)
 {
 	int err = 0;
-	YDLE_DEBUG << "Enter in thread listen";
+	YDLE_DEBUG << "Enter in listen thread";
 	protocolRF* parent=(protocolRF*)pParam;
 
 	struct sched_param p;
-
 	p.__sched_priority = sched_get_priority_max(SCHED_RR);
 	if (sched_setscheduler(0, SCHED_RR, &p) == -1) {
 		perror("Failed to switch to realtime scheduler.");
 	}
-
 
 	if (pParam)
 	{
@@ -823,16 +818,16 @@ void* protocolRF::listenSignal(void* pParam)
 				// if a full signal is received
 				if(parent->isDone())
 				{
-					// If it's a ACK then tread it
+					// If it's a ACK then handle it
 					if(parent->m_receivedframe.type == TYPE_ACK)
 					{
 						std::list<protocolRF::ACKCmd_t>::iterator i;
-
 						for(i=ListACK.begin(); i != ListACK.end(); ++i)
 						{
-							if((parent->m_receivedframe.sender==(*i).Frame.sender)&&(parent->m_receivedframe.receptor==(*i).Frame.receptor))
+							if(parent->m_receivedframe.sender == i->Frame.receptor
+									&& parent->m_receivedframe.receptor == i->Frame.sender)
 							{
-								YDLE_DEBUG << "Remove ACK for pending list";
+								YDLE_DEBUG << "Remove ACK from pending list";
 								i=ListACK.erase(i);
 								break; // remove only one ACK at a time.
 							}
@@ -1099,35 +1094,40 @@ bool protocolRF::isDone()
 // ----------------------------------------------------------------------------
 void protocolRF::checkACK(protocolRF* parent)
 {
-	if(!ListACK.empty())
-	{
+	if(!ListACK.empty()){
 		std::list<protocolRF::ACKCmd_t>::iterator i;
 
 		struct timeval localTime;
 		gettimeofday(&localTime, NULL); 
-		int iTime=localTime.tv_sec * 1000000;
-		iTime+=localTime.tv_usec;
+		int iTime = localTime.tv_sec * 1000000;
+		iTime += localTime.tv_usec;
 
 		for(i=ListACK.begin(); i != ListACK.end(); ++i)
 		{
-			if ( (iTime-(*i).Time > TIME_OUT_ACK) || ((*i).Time>iTime) )
+			if ( (iTime - i->Time) > TIME_OUT_ACK ||  i->Time > iTime )
 			{
-				YDLE_WARN << "Ack not receive from receptor: " << (*i).Frame.receptor;
+				YDLE_WARN << "Ack not receive from receptor: " << (int)i->Frame.receptor;
 				// if more than 2 retry, then remove it
-				if((*i).iCount >=2)
+				if( i->iCount >=2)
 				{
 					YDLE_WARN << "ACK never received.";
 					i=ListACK.erase(i);		// TODO : Send IHM this error
 				}
 				else
 				{
-					memcpy(&parent->m_sendframe,&(*i).Frame,sizeof(Frame_t));
+					memcpy(&parent->m_sendframe,&i->Frame,sizeof(Frame_t));
 					parent->m_sendframe.taille--; // remove CRC.It will be add in the transmit function
-					(*i).Time=iTime;
-					(*i).iCount++;
+					i->Time=iTime;
+					i->iCount++;
 					parent->transmit(true);	// re-Send frame;
 				}		 
 			}
+		}
+		//TODO: Booooouuuuuuuuhhhhhhhhhhhh
+		struct sched_param p;
+		p.__sched_priority = sched_get_priority_max(SCHED_RR);
+		if (sched_setscheduler(0, SCHED_RR, &p) == -1) {
+			perror("Failed to switch to realtime scheduler.");
 		}
 	}
 }

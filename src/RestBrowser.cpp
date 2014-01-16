@@ -59,11 +59,17 @@ Json::Value RestBrowser::doGet(std::string url, std::string parameters) {
 Json::Value RestBrowser::doPost(std::string url, Json::Value  *post_data) {
 	CURL *curl;
 	CURLcode res;
+	char *error_buf;
 	Json::Reader reader;
 	Json::Value response;
 	std::stringstream data;
 	std::string spdata;
 
+	error_buf = (char*)malloc(sizeof(char) * CURL_ERROR_SIZE * 2);
+	if(error_buf == NULL){
+		YDLE_FATAL << "Unable to allocate memory";
+		return 0;
+	}
 	curl = curl_easy_init();
 	if(curl) {
 		// Build get request
@@ -83,6 +89,8 @@ Json::Value RestBrowser::doPost(std::string url, Json::Value  *post_data) {
 		curl_easy_setopt(curl, CURLOPT_URL, req_param.c_str());
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, spdata.c_str());
+		curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error_buf);
+		curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
 
 		// Define the callback function and the data pointer
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &ydle::RestBrowser::responseToJsonObjectCallback);
@@ -92,8 +100,10 @@ Json::Value RestBrowser::doPost(std::string url, Json::Value  *post_data) {
 
 		if(res != CURLE_OK){
 			YDLE_WARN << "curl_easy_perform() failed: " << curl_easy_strerror(res);
+			YDLE_WARN << "Error is :" << error_buf;
 		}
 		curl_easy_cleanup(curl);
+		free(error_buf);
 	}
 
 	return response;
@@ -102,11 +112,18 @@ Json::Value RestBrowser::doPost(std::string url, Json::Value  *post_data) {
 Json::Value RestBrowser::doPost(std::string url, std::string  post_data) {
 	CURL *curl;
 	CURLcode res;
+	char *error_buf;
 	Json::Reader reader;
 	Json::Value response;
 	std::stringstream data;
 	std::string spdata;
 
+
+	error_buf = (char*)malloc(sizeof(char) * CURL_ERROR_SIZE * 2);
+	if(error_buf == NULL){
+		YDLE_FATAL << "Unable to allocate memory";
+		return 0;
+	}
 	curl = curl_easy_init();
 	if(curl) {
 		// Build get request
@@ -120,6 +137,8 @@ Json::Value RestBrowser::doPost(std::string url, std::string  post_data) {
 		curl_easy_setopt(curl, CURLOPT_URL, req_param.c_str());
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data.c_str());
+		curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error_buf);
+		curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
 
 		// Define the callback function and the data pointer
 		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &ydle::RestBrowser::responseToJsonObjectCallback);
@@ -129,8 +148,10 @@ Json::Value RestBrowser::doPost(std::string url, std::string  post_data) {
 
 		if(res != CURLE_OK){
 			YDLE_WARN << "curl_easy_perform() failed: " << curl_easy_strerror(res);
+			YDLE_WARN << "Error is :" << error_buf;
 		}
 		curl_easy_cleanup(curl);
+		free(error_buf);
 	}
 
 	return response;

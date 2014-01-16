@@ -24,17 +24,7 @@
 #include "webServer.h"
 #include "NodeRequestHandler.h"
 
-#define DEFAULT_HTTP_PORT 8888
-#define DEFAULT_IHM_ADDRESS "127.0.0.1"
-
 using namespace std;
-
-// global pin used for emit
-int g_pinTx = 1;
-
-// global pin used for receive
-int g_pinRx = 0;
-
 protocolRF *g_ProtocolRF;
 
 // ----------------------------------------------------------------------------
