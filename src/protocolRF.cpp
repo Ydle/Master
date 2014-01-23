@@ -12,10 +12,11 @@ using namespace std;
 
 #define TIME_OUT_ACK  5000000 //microsecondl
 
-static list<protocolRF::ACKCmd_t> ListACK;
 
+extern void scheduler_realtime();
+extern void scheduler_standard ();
 
-static unsigned char _atm_crc8_table[256] = {
+static uint8_t _atm_crc8_table[256] = {
 		0x00, 0x07, 0x0E, 0x09, 0x1C, 0x1B, 0x12, 0x15,
 		0x38, 0x3F, 0x36, 0x31, 0x24, 0x23, 0x2A, 0x2D,
 		0x70, 0x77, 0x7E, 0x79, 0x6C, 0x6B, 0x62, 0x65,
@@ -50,12 +51,12 @@ static unsigned char _atm_crc8_table[256] = {
 		0xE6, 0xE1, 0xE8, 0xEF, 0xFA, 0xFD, 0xF4, 0xF3
 };
 
-unsigned char  protocolRF::crc8(unsigned char* buf, int len)
+uint8_t  protocolRF::crc8(uint8_t* buf, int len)
 {
 	// The inital and final constants as used in the ATM HEC.
-	const unsigned char initial = 0x00;
-	const unsigned char final = 0x55;
-	unsigned char crc = initial;
+	const uint8_t initial = 0x00;
+	const uint8_t final = 0x55;
+	uint8_t crc = initial;
 	while (len) {
 		crc = _atm_crc8_table[(*buf ^ crc)];
 		buf++;
@@ -64,23 +65,24 @@ unsigned char  protocolRF::crc8(unsigned char* buf, int len)
 	return crc ^ final;
 }
 
-unsigned char protocolRF::computeCrc(Frame_t* frame){
-	unsigned char *buf, crc;
+uint8_t protocolRF::computeCrc(Frame_t* frame){
+	uint8_t *buf, crc;
 	int a,j;
 
-	buf = (unsigned char*)malloc(frame->taille+3);
+	buf = (uint8_t*)malloc(frame->taille+3);
 	memset(buf, 0x0, frame->taille+3);
 
 	buf[0] = frame->sender;
 	buf[1] = frame->receptor;
-	buf[2] = frame->type;
-	buf[2] = buf[2] << 5;
+	buf[2] = frame->type << 5;
 	buf[2] |= frame->taille;
 
 	for(a=3, j=0 ;j < frame->taille - 1;a++, j++){
 		buf[a] = frame->data[j];
 	}
-	crc = crc8(buf,frame->taille+3);
+	// message size = Sender (1byte) + receptor(1 byte) + type/size (1byte) + data/crc (size bytes)
+	// without crc : total size : 3 + taille - 1 = taille+2
+	crc = crc8(buf,frame->taille+2);
 	free(buf);
 	return crc;
 }
@@ -228,16 +230,8 @@ void protocolRF::initialisation()
 // ----------------------------------------------------------------------------
 void protocolRF::sendPair(bool b) 
 {
-	if(b)
-	{
-		sendBit(true);
-		sendBit(false);
-	}
-	else
-	{
-		sendBit(false);
-		sendBit(true);
-	}
+	sendBit(b);
+	sendBit(!b);
 }
 
 
@@ -282,12 +276,12 @@ void protocolRF::transmit(bool bRetransmit)
 	int j = 0;
 	int a = 0;
 	int i = 0;
-	unsigned char crc;
+	uint8_t crc;
 	// calcul crc
 
 	m_sendframe.taille++; // add crc BYTE
 	crc = computeCrc(&m_sendframe);
-
+	YDLE_DEBUG << "Send ACK";
 	m_sendframe.crc = crc;
 
 	itob(m_sendframe.sender,0,8);
@@ -303,34 +297,25 @@ void protocolRF::transmit(bool bRetransmit)
 
 	// If CMD then wait	 for ACK ONLY IF it's not already a re-retransmit
 	if(m_sendframe.type == TYPE_CMD && !bRetransmit) {
-		struct timeval localTime;
 		ACKCmd_t newack;
 
 		memcpy(&newack.Frame,&m_sendframe,sizeof(Frame_t));
 		newack.iCount=0;
-		gettimeofday(&localTime, NULL); 
-		newack.Time = localTime.tv_sec * 1000000;
-		newack.Time += localTime.tv_usec;
-		ListACK.push_back(newack);
+		newack.Time = getTime();
+		mListACK.push_back(newack);
 	}
 
 	//Lock reception when we end something
 	pthread_mutex_lock(&g_mutexSynchro);
 
-	struct sched_param p;
-	p.__sched_priority = sched_get_priority_max(SCHED_RR);
-	if (sched_setscheduler(0, SCHED_RR, &p) == -1) {
-		perror("Failed to switch to realtime scheduler.");
-	}
+//	scheduler_realtime();
 
 
 	// Sequence AGC
 	for (int x=0; x<16; x++)
 	{
-		digitalWrite(m_pinTx, HIGH);    // Pulse HIGH
-		delayMicroseconds(t_per);
-		digitalWrite(m_pinTx, LOW);	  // Pulse LOW
-		delayMicroseconds(t_per);
+		sendBit(true);
+		sendBit(false);
 	}
 
 	for (j=0; j<8; j++)
@@ -346,10 +331,9 @@ void protocolRF::transmit(bool bRetransmit)
 
 	digitalWrite(m_pinTx, LOW);
 
-	p.__sched_priority = 0;
-	if (sched_setscheduler(0, SCHED_OTHER, &p) == -1) {
-		perror("Failed to switch to normal scheduler.");
-	}
+//	scheduler_standard ();
+
+//SF		if(debugActivated) YDLE_DEBUG << ("end sending");
 
 	//unLock reception when we finished
 	pthread_mutex_unlock(&g_mutexSynchro);
@@ -366,7 +350,7 @@ void protocolRF::transmit(bool bRetransmit)
 
  */
 // ----------------------------------------------------------------------------
-int protocolRF::extractData(int index,int &itype,int &ivalue,unsigned char* pBuffer /*=NULL*/,int ilen /*=0*/)
+int protocolRF::extractData(int index,int &itype,int &ivalue,uint8_t* pBuffer /*=NULL*/,int ilen /*=0*/)
 {
 	uint8_t* ptr;
 	bool bifValueisNegativ=false;
@@ -392,7 +376,7 @@ int protocolRF::extractData(int index,int &itype,int &ivalue,unsigned char* pBuf
 
 	while (!bEndOfData)
 	{
-		itype=(unsigned char)*ptr>>4;
+		itype=(uint8_t)*ptr>>4;
 		bifValueisNegativ=false;
 
 		// This is a very ugly code :-( Must do something better
@@ -724,22 +708,17 @@ void protocolRF::pll()
 				m_receivedframe.type = type;
 				m_receivedframe.taille = rx_bytes_count;
 				memcpy(m_receivedframe.data,m_data,rx_bytes_count-1); // copy data len - crc
-				m_receivedframe.crc = 0;
 
 				// crc calcul
-				unsigned char crc;
-				crc = computeCrc(&m_receivedframe);
-				m_receivedframe.crc = m_data[rx_bytes_count-1];
-				this->printFrame(m_receivedframe);
-				if(crc != m_data[rx_bytes_count-1])
-				{	
+				m_receivedframe.crc = computeCrc(&m_receivedframe);
+
+				if(m_data[rx_bytes_count-1] != m_receivedframe.crc) {	
 					if(debugActivated)
 						YDLE_DEBUG << ("crc error!!!!!!!!!");
 				}
 				else
 				{
 					m_rx_done = true;
-					m_receivedframe.crc = crc;
 				}
 				length_ok = 0;
 				sender = 0;
@@ -777,96 +756,100 @@ void protocolRF::pll()
 //thread reading RX PIN
  */
 // ----------------------------------------------------------------------------
-void* protocolRF::listenSignal(void* pParam)
+void protocolRF::listenSignal()
 {
 	int err = 0;
-	YDLE_DEBUG << "Enter in listen thread";
-	protocolRF* parent=(protocolRF*)pParam;
+	scheduler_realtime();
 
-	struct sched_param p;
-	p.__sched_priority = sched_get_priority_max(SCHED_RR);
-	if (sched_setscheduler(0, SCHED_RR, &p) == -1) {
-		perror("Failed to switch to realtime scheduler.");
-	}
+	while(1)
+	{
+		// Si le temps est atteint, on effectue une mesure (sample) puis on appelle la PLL
+		//  *-------  1 CAS, on calcul le temps a attendre entre 2 lecture ------
+		int tempo=(t_start + (sample_count * f_bit)) -micros() -2;
+
+		if(tempo<5) tempo=5; // la fonction delayMicroseconds n'aime pas la valeur negative
+
+		delayMicroseconds(tempo);		
+
+		// try to received ONLY if we are not currently sending something
+		err=pthread_mutex_lock(&g_mutexSynchro);
+		if( err== 0)
+		{		  
+			if(isDone())
+			{
+				setDone(false);
+			}
+
+			m_sample_value = digitalRead(m_pinRx);
+
+			pll();
+
+
+			// if a full signal is received
+			if(isDone())
+			{
+				// If it's a ACK then handle it
+				if(m_receivedframe.type == TYPE_ACK)
+				{
+					std::list<protocolRF::ACKCmd_t>::iterator i;
+					for(i=mListACK.begin(); i != mListACK.end(); ++i)
+					{
+						if(m_receivedframe.sender == i->Frame.receptor
+								&& m_receivedframe.receptor == i->Frame.sender)
+						{
+							YDLE_DEBUG << "Remove ACK from pending list";
+							i=mListACK.erase(i);
+							break; // remove only one ACK at a time.
+						}
+					}
+				}
+				else if(m_receivedframe.type == TYPE_ETAT_ACK)
+				{
+					// Send ACK	
+					dataToFrame(m_receivedframe.sender,m_receivedframe.receptor,TYPE_ACK);				
+					delay (250);
+					transmit();
+					delay (50);
+					transmit();
+					AddToListCmd(m_receivedframe);
+				}
+				else //else send it to IHM
+				{
+					YDLE_DEBUG << "New frame ready to be sent :";
+					printFrame(m_receivedframe);
+					AddToListCmd(m_receivedframe);
+				}
+			}
+
+			// Let's Send thread
+			pthread_mutex_unlock(&g_mutexSynchro);
+		}
+		else
+		{
+			YDLE_WARN << "error acquire mutex" << err;
+		}
+		// check if we need re-transmit	
+		checkACK();
+	}	
+	// Code jamais atteint....
+	scheduler_standard();
+}
+
+void* protocolRF::listenSignal(void* pParam)
+{
+	YDLE_DEBUG << "Enter in thread listen";
+	protocolRF* parent=(protocolRF*)pParam;
+	
+//	scheduler_realtime();
 
 	if (pParam)
 	{
-		while(1)
-		{
-			// Si le temps est atteint, on effectue une mesure (sample) puis on appelle la PLL
-			//  *-------  1 CAS, on calcul le temps a attendre entre 2 lecture ------
-			int tempo=(parent->t_start + (parent->sample_count * parent->f_bit)) -micros() -2;
-
-			if(tempo<5) tempo=5; // la fonction delayMicroseconds n'aime pas la valeur negative
-
-			delayMicroseconds(tempo);		
-
-			// try to received ONLY if we are not currently sending something
-			err=pthread_mutex_lock(&g_mutexSynchro);
-			if( err== 0)
-			{		  
-				if(parent->isDone())
-				{
-					parent->setDone(false);
-				}
-
-				parent->m_sample_value = digitalRead(parent->m_pinRx);
-
-				parent->pll();
-
-
-				// if a full signal is received
-				if(parent->isDone())
-				{
-					// If it's a ACK then handle it
-					if(parent->m_receivedframe.type == TYPE_ACK)
-					{
-						std::list<protocolRF::ACKCmd_t>::iterator i;
-						for(i=ListACK.begin(); i != ListACK.end(); ++i)
-						{
-							if(parent->m_receivedframe.sender == i->Frame.receptor
-									&& parent->m_receivedframe.receptor == i->Frame.sender)
-							{
-								YDLE_DEBUG << "Remove ACK from pending list";
-								i=ListACK.erase(i);
-								break; // remove only one ACK at a time.
-							}
-						}
-					}
-					else if(parent->m_receivedframe.type == TYPE_ETAT_ACK)
-					{
-						// Send ACK	
-						parent->dataToFrame(parent->m_receivedframe.sender,parent->m_receivedframe.receptor,TYPE_ACK);				
-						parent->transmit();
-						AddToListCmd(parent->m_receivedframe);
-					}
-					else //else send it to IHM
-					{
-						YDLE_DEBUG << "New frame ready to be sent :";
-						parent->printFrame(parent->m_receivedframe);
-						AddToListCmd(parent->m_receivedframe);
-					}
-				}
-
-				// Let's Send thread
-				pthread_mutex_unlock(&g_mutexSynchro);
-			}
-			else
-			{
-				YDLE_WARN << "error acquire mutex" << err;
-			}
-			// check if we need re-transmit	
-			checkACK(parent);
-		}	
-
+		parent->listenSignal() ;
 	}
-
-	p.__sched_priority = 0;
-	if (sched_setscheduler(0, SCHED_OTHER, &p) == -1) {
-		perror("Failed to switch to normal scheduler.");
-	}
-
 	YDLE_INFO << "Exit of thread listen";
+
+//	scheduler_standard ();
+
 	return NULL;
 }
 
@@ -908,12 +891,8 @@ void protocolRF::itob(unsigned long integer, int start, int length)
 {
 	for (int i=0; i<length; i++)
 	{
-		if ((integer / power2(length-1-i))==1)
-		{
-			integer -= power2(length-1-i);
-			m_FrameBits[start + i]=1;
-		}
-		else m_FrameBits[start + i]=0;
+		int pow2 = 1 << (length-1-i) ;
+		m_FrameBits[start + i] = ((integer & pow2) != 0);
 	}
 }
 
@@ -949,7 +928,7 @@ void protocolRF::dataToFrame(unsigned long Receiver, unsigned long Transmitter, 
 	   // log Frame
  */
 // ----------------------------------------------------------------------------
-void protocolRF::printFrame(Frame_t trame)
+void protocolRF::printFrame(Frame_t & trame)
 {
 	// if debug
 	if(debugActivated)
@@ -1031,7 +1010,7 @@ int protocolRF::getTaille()
 	   // 
  */
 // ----------------------------------------------------------------------------
-unsigned char* protocolRF::getData()
+uint8_t* protocolRF::getData()
 {
 	return m_receivedframe.data;
 }
@@ -1092,17 +1071,14 @@ bool protocolRF::isDone()
     Check if CMD command was not received there ACK. retry if needed
  */
 // ----------------------------------------------------------------------------
-void protocolRF::checkACK(protocolRF* parent)
+void protocolRF::checkACK()
 {
-	if(!ListACK.empty()){
+	if(!mListACK.empty()) {
 		std::list<protocolRF::ACKCmd_t>::iterator i;
 
-		struct timeval localTime;
-		gettimeofday(&localTime, NULL); 
-		int iTime = localTime.tv_sec * 1000000;
-		iTime += localTime.tv_usec;
+		int iTime = getTime() ;
 
-		for(i=ListACK.begin(); i != ListACK.end(); ++i)
+		for(i=mListACK.begin(); i != mListACK.end(); ++i)
 		{
 			if ( (iTime - i->Time) > TIME_OUT_ACK ||  i->Time > iTime )
 			{
@@ -1111,23 +1087,26 @@ void protocolRF::checkACK(protocolRF* parent)
 				if( i->iCount >=2)
 				{
 					YDLE_WARN << "ACK never received.";
-					i=ListACK.erase(i);		// TODO : Send IHM this error
+					i=mListACK.erase(i);		// TODO : Send IHM this error
 				}
 				else
 				{
-					memcpy(&parent->m_sendframe,&i->Frame,sizeof(Frame_t));
-					parent->m_sendframe.taille--; // remove CRC.It will be add in the transmit function
+					memcpy(&m_sendframe, &i->Frame,sizeof(Frame_t));
+					m_sendframe.taille--; // remove CRC.It will be add in the transmit function
 					i->Time=iTime;
 					i->iCount++;
-					parent->transmit(true);	// re-Send frame;
+					transmit(true);	// re-Send frame;
 				}		 
 			}
 		}
-		//TODO: Booooouuuuuuuuhhhhhhhhhhhh
-		struct sched_param p;
-		p.__sched_priority = sched_get_priority_max(SCHED_RR);
-		if (sched_setscheduler(0, SCHED_RR, &p) == -1) {
-			perror("Failed to switch to realtime scheduler.");
-		}
 	}
+}
+
+int protocolRF::getTime()
+{
+	struct timeval localTime;
+	gettimeofday(&localTime, NULL); 
+	int iTime=localTime.tv_sec * 1000000;
+	iTime+=localTime.tv_usec;
+	return iTime;
 }

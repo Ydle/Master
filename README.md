@@ -1,22 +1,24 @@
 ENGLISH VERSION BELOW
 
-Librairies nécéssaires :
+Bibliothéques nécéssaires :
 - wiringPi
 - microhttpd 
 - jsoncpp
 - curl
+- libconfig++
 
+Pour les installer :
+aptitude install libmicrohttpd-dev libjsoncpp-dev libcurl4-openssl-dev libconfig++-dev build-essential
 
-* Penser a Modifier les Pin de réception / émissions en fonction de votre config hardware dans les toutes premieres ligne du fichier master.cpp
-
-Par defaut:
-
-Transmission : GPIO 0 
-Emission : GPIO 6 
+Pensez à créer un fichier de configuration !
+Exemple disponible dans ydle.conf-example
 
 Plan des Pin disponibles ici : http://wiringpi.com/pins/
 
-* Faire un "Make" dans le répertoire master ce qui doit vous compiler un ydlemaster a lancer par un : sudo ./ydlemaster
+Pour le lancement :
+$ ./configure
+$ make
+$ sudo ./src/ydlemaster -c ydle.conf
 
 documentation complète disponible ici : http://wiki.ydle.fr/doku.php
 
@@ -28,16 +30,16 @@ You will need the following libraries :
 - microhttpd 
 - jsoncpp
 - curl
+- libconfig++
 
-* Do not forget to modify pins for reception / emission  depending on your hardware configuration on the first lines of the file master.cpp
+Don't forget to create a config file !
+Example are located in ydle.conf-example
 
-Default values : 
+Pins mapping is available here : http://wiringpi.com/pins/
 
-reception : GPIO 0 
-emission : GPIO 6 
-
-Pins' mapping is available here : http://wiringpi.com/pins/
-
-* You'll have to run a "Make" command in the master directory. This command should compile the ydlemaster, an executable that you can run with : sudo ./ydlemaster
+For compiling
+$ ./configure
+$ make
+$ sudo ./src/ydlemaster -c ydle.conf
 
 Complete documentation is available : http://wiki.ydle.fr/doku.php

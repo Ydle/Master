@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <iostream>
 #include <fstream>
+#include <list>
 
 using namespace std;
 
@@ -38,12 +39,12 @@ public:
 	// Définie un type de structure Signal_t
 	struct Frame_t
 	{
-		unsigned char sender;
-		unsigned char receptor;
-		unsigned char type;
-		unsigned char taille;	// data len + crc in BYTES
-		unsigned char data[30];
-		unsigned char crc;
+		uint8_t sender;
+		uint8_t receptor;
+		uint8_t type;
+		uint8_t taille;	// data len + crc in BYTES
+		uint8_t data[30];
+		uint8_t crc;
 	};
 
 	// Définie un type de structure Signal_t
@@ -56,9 +57,10 @@ public:
 
 	// Ecoute le récepteur pour l'arrivée d'un signal
 	static void* listenSignal(void* pParam);
+	void		listenSignal();
 
 	// Check if CMD command was not received there ACK. retry if needed
-	static void checkACK(protocolRF* parent);
+	void checkACK();
 
 
 	// Le constructeur qui lance une instance avec les numéros des pins de l'émetteur, du récepteur et du boutton
@@ -83,7 +85,7 @@ public:
 
 	int getTaille();
 
-	unsigned char* getData();
+	uint8_t* getData();
 
 	int isSignal();
 
@@ -100,7 +102,7 @@ public:
 	void dataToFrame(unsigned long recepteur, unsigned long emetteur, unsigned long type);
 
 	// extract any type of data from receivedsignal
-	int extractData(int index,int &itype,int &ivalue,unsigned char* pBuffer=NULL,int len=0);
+	int extractData(int index,int &itype,int &ivalue,uint8_t* pBuffer=NULL,int len=0);
 
 	// add TYPE_ETAT data
 	void addData(int type,int data);
@@ -110,7 +112,7 @@ public:
 
 	// Envoie des verrous et des bits formant une trame
 	void transmit(bool bRetransmit = false);
-	unsigned char computeCrc(Frame_t* frame);
+	uint8_t computeCrc(Frame_t* frame);
 
 protected:
 
@@ -130,6 +132,10 @@ protected:
 	// Ecriture en mémoire EEProm du signal de référence
 	void checkEEProm();
 
+	// get current time in usec
+	int getTime();
+	
+
 
 
 	// Calcule 2^"power"
@@ -140,7 +146,7 @@ protected:
 
 
 	// Affiche le contenue des trames reçues
-	void printFrame(Frame_t trame);
+	void printFrame(Frame_t & trame);
 
 
 private:
@@ -150,7 +156,7 @@ private:
 	// Tx PIN
 	int m_pinTx;
 
-	unsigned char  crc8(unsigned char* buf, int len);
+	uint8_t  crc8(uint8_t* buf, int len);
 
 
 	// L'information sur le type de transmission (requete, ACK,...)
@@ -175,21 +181,21 @@ private:
 	bool debugActivated ;
 
 	// Disponibilité d'un sample
-	unsigned char m_sample_value ;
+	uint8_t m_sample_value ;
 
 	// Nombre de samples sur la période en cours
-	unsigned char  sample_count ;
+	uint8_t  sample_count ;
 
 	// La valeur du dernier sample reçu
-	unsigned char last_sample_value;
+	uint8_t last_sample_value;
 
 	// La rampe PLL, varie entre 0 et 79 sur les 8 samples de chaque période de bit
 	// Quand la PLL est synchronisée, la transition de bit arrive quand la rampe vaut 0
-	unsigned char pll_ramp;
+	uint8_t pll_ramp;
 
 	// La somme des valeurs des samples. si inférieur à 2 "1" samples dans le cycle de PLL
 	// le bit est déclaré comme 0, sinon à 1
-	unsigned char sample_sum;
+	uint8_t sample_sum;
 
 	// Les 16 derniers bits reçus, pour repérer l'octet de start
 	unsigned short rx_bits ;
@@ -198,7 +204,7 @@ private:
 	unsigned long t_start ;
 
 	// Flag pour indiquer la bonne réception du message de start
-	unsigned char rx_active ;
+	uint8_t rx_active ;
 
 	// Le débit de transfert en bits/secondes
 	long speed ;
@@ -231,7 +237,7 @@ private:
 	unsigned long taille;
 
 	// Data reçues
-	unsigned char m_data[31]; // data + crc
+	 uint8_t m_data[31]; // data + crc
 
 	// Nombre d'octets reçus
 	int rx_bytes_count ;
@@ -241,6 +247,8 @@ private:
 
 	// Si le message est complet
 	int m_rx_done;
+	
+	std::list<protocolRF::ACKCmd_t> mListACK;
 };
 
 #endif // PROTOCOLRF_H
