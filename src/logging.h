@@ -238,6 +238,7 @@ bool InitLogging(log_level level, log_output output);
  * @returns true if logging was initialized sucessfully, false otherwise.
  */
 void InitLogging(log_level level, LogDestination *destination);
+
 /***/
 }  // namespace ydle
 /**@}*/

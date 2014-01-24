@@ -34,6 +34,9 @@
 #include <iostream>
 #include <string>
 #include <ctime>
+#include <boost/signals2.hpp>
+#include <boost/functional.hpp>
+
 #include "logging.h"
 
 //#include "ydle/base/Flags.h"
@@ -53,7 +56,7 @@ using std::ostringstream;
  * @brief pointer to a log target
  */
 LogDestination *log_target = NULL;
-
+boost::signals2::signal<void (log_level, std::string)> loggers;
 log_level logging_level = YDLE_LOG_WARN;
 /**@endcond*/
 
@@ -132,13 +135,18 @@ bool InitLogging(log_level level, log_output output) {
   return true;
 }
 
-
 void InitLogging(log_level level, LogDestination *destination) {
+  SetLogLevel(level);
+  loggers.connect(boost::bind(&LogDestination::Write, destination, _1, _2));
+}
+
+/*void InitLogging(log_level level, LogDestination *destination) {
   SetLogLevel(level);
   if (log_target)
     delete log_target;
   log_target = destination;
-}
+}*/
+
 
 /**@}*/
 /**@cond HIDDEN_SYMBOLS*/
@@ -172,8 +180,7 @@ void LogLine::Write() {
   if (line.at(line.length() - 1) != '\n')
     line.append("\n");
 
-  if (log_target)
-    log_target->Write(m_level, line);
+  loggers(m_level, line);
 }
 /**@endcond*/
 

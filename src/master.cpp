@@ -21,6 +21,7 @@
 #include "SettingsParser.h"
 #include "IhmCommunicationThread.h"
 #include "logging.h"
+#include "restLoggerDestination.h"
 #include "webServer.h"
 #include "NodeRequestHandler.h"
 
@@ -132,7 +133,8 @@ void exit_handler(int s) {
 // ----------------------------------------------------------------------------
 int main(int argc, char** argv) {
 	// Init logging system
-	ydle::InitLogging(ydle::YDLE_LOG_DEBUG, ydle::YDLE_LOG_STDERR);
+	ydle::StdErrorLogDestination *stderr_log = new ydle::StdErrorLogDestination();
+	ydle::InitLogging(ydle::YDLE_LOG_DEBUG, stderr_log);
 
 	// Parse command line and config file
 	ydle::SettingsParser* s;
@@ -159,14 +161,18 @@ int main(int argc, char** argv) {
 	}
 
 	struct sigaction sigIntHandler;
-
 	sigIntHandler.sa_handler = exit_handler;
 	sigemptyset(&sigIntHandler.sa_mask);
 	sigIntHandler.sa_flags = 0;
-
 	sigaction(SIGINT, &sigIntHandler, NULL);
 
-	scheduler_realtime();
+	std::stringstream ihm;
+	ihm << master_config["ihm_address"] << ":" << master_config["ihm_port"];
+	ydle::restLoggerDestination *restLog = new ydle::restLoggerDestination(ihm.str());
+	restLog->Init();
+
+	ydle::InitLogging(ydle::YDLE_LOG_DEBUG, restLog);
+
 
 	//log("Program start");
 	YDLE_DEBUG << "Program start";
@@ -220,6 +226,4 @@ int main(int argc, char** argv) {
 	}
 
 	YDLE_INFO << "program end"; // end execution .
-
-	scheduler_standard();
 }

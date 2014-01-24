@@ -158,10 +158,10 @@ Json::Value RestBrowser::doPost(std::string url, std::string  post_data) {
 }
 
 
-static size_t RestBrowser::responseToJsonObjectCallback( char *response, size_t size, size_t nmemb, void *userdata){
+size_t RestBrowser::responseToJsonObjectCallback( char *response, size_t size, size_t nmemb, void *userdata){
 	size_t realsize = size * nmemb;
 
-	Json::Value *result = userdata;
+	Json::Value *result = (Json::Value *)userdata;
 
 	Json::Reader reader;
 	bool parsingSuccessful = reader.parse(response, *result);

@@ -16,7 +16,6 @@
 namespace ydle {
 
 IhmCommunicationThread::IhmCommunicationThread(std::string web_adress, list<protocolRF::Frame_t> *cmd_list, pthread_mutex_t *mutex) {
-	// Rajouter par la suite la configuration de l'adresse ip du master !
 	this->ListCmd = cmd_list;
 	this->mutex_listcmd = mutex;
 	this->running = true;
@@ -31,6 +30,7 @@ void IhmCommunicationThread::run(){
 	YDLE_DEBUG << "Start Communication thread";
 	protocolRF::Frame_t frame;
 	int size;
+
 	while(this->running){
 		pthread_mutex_lock(this->mutex_listcmd);
 		size = this->ListCmd->size();
@@ -62,15 +62,16 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 	sender = (int)frame.sender;
 	// TODO: Need a better method to get the data
 	this->extractData(frame, 1, type, value);
-	YDLE_DEBUG << "Data received : From "<< (int)frame.sender << " Type : "<< type << " Value : " << value << "\n";
+	YDLE_DEBUG << "Data received : From "<< sender << " Type : "<< type << " Value : " << value << "\n";
 
 	RestBrowser browser(this->web_address);
 	std::stringstream request;
 	request << "/api/node/data";
-	buf << "sender:" <<  (int)sender << "\r\ntype:" << type << "\r\nvalue=" << value;
+	buf << "sender=" <<  sender << "&type=" << type << "&value=" << value;
 
 	browser.doPost(request.str(), buf.str());
 	YDLE_DEBUG << "Url :" << request.str();
+	YDLE_DEBUG << "    buf :" << buf.str();
 
 	return 1;
 }
