@@ -6,9 +6,10 @@ Bibliothéques nécéssaires :
 - jsoncpp
 - curl
 - libconfig++
+- libboost-signal
 
 Pour les installer :
-aptitude install libmicrohttpd-dev libjsoncpp-dev libcurl4-openssl-dev libconfig++-dev build-essential
+aptitude install libmicrohttpd-dev libjsoncpp-dev libcurl4-openssl-dev libconfig++-dev libboost-signals-dev build-essential
 
 Pensez à créer un fichier de configuration !
 Exemple disponible dans ydle.conf-example
