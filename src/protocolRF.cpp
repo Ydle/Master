@@ -312,7 +312,7 @@ void protocolRF::transmit(bool bRetransmit)
 
 
 	// Sequence AGC
-	for (int x=0; x<16; x++)
+	for (int x=0; x < 32; x++)
 	{
 		sendBit(true);
 		sendBit(false);
@@ -808,9 +808,9 @@ void protocolRF::listenSignal()
 					// Send ACK	
 					dataToFrame(m_receivedframe.sender,m_receivedframe.receptor,TYPE_ACK);				
 					delay (250);
-					transmit();
+					transmit(0);
 					delay (50);
-					transmit();
+					transmit(0);
 					AddToListCmd(m_receivedframe);
 				}
 				else //else send it to IHM
