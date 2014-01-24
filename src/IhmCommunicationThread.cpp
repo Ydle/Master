@@ -67,7 +67,7 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 	RestBrowser browser(this->web_address);
 	std::stringstream request;
 	request << "/api/node/data";
-	buf << "sender=" <<  sender << "&type=" << type << "&value=" << value << "\r\n" ;
+	buf << "sender=" <<  sender << "&type=" << type << "&data=" << value << "\r\n" ;
 
 	browser.doPost(request.str(), buf.str());
 	YDLE_DEBUG << "Url :" << request.str();

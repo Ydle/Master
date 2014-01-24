@@ -140,14 +140,6 @@ void InitLogging(log_level level, LogDestination *destination) {
   loggers.connect(boost::bind(&LogDestination::Write, destination, _1, _2));
 }
 
-/*void InitLogging(log_level level, LogDestination *destination) {
-  SetLogLevel(level);
-  if (log_target)
-    delete log_target;
-  log_target = destination;
-}*/
-
-
 /**@}*/
 /**@cond HIDDEN_SYMBOLS*/
 LogLine::LogLine(const char *file,

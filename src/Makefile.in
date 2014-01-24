@@ -65,6 +65,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_ydlemaster_OBJECTS = master.$(OBJEXT) logging.$(OBJEXT) \
+	restLoggerDestination.$(OBJEXT) \
 	IhmCommunicationThread.$(OBJEXT) NodeRequestHandler.$(OBJEXT) \
 	protocolRF.$(OBJEXT) RestBrowser.$(OBJEXT) \
 	SettingsParser.$(OBJEXT) webServer.$(OBJEXT)
@@ -199,6 +200,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ydlemaster_SOURCES = master.cpp master.h \
 					logging.cpp logging.h \
+					restLoggerDestination.cpp restLoggerDestination.h \
 					IhmCommunicationThread.cpp IhmCommunicationThread.h \
 					NodeRequestHandler.cpp NodeRequestHandler.h \
 					protocolRF.cpp protocolRF.h \
@@ -298,6 +300,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/logging.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/master.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocolRF.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/restLoggerDestination.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/webServer.Po@am__quote@
 
 .cpp.o:

@@ -22,7 +22,7 @@ struct log_message{
 
 public:
 	restLoggerDestination(std::string hub_url);
-
+	static size_t responseCallback( char *response, size_t size, size_t nmemb, void *userdata);
 
    /**
     * @brief Initialize the restLoggerDestination

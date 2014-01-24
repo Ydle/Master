@@ -134,11 +134,11 @@ Json::Value RestBrowser::doPost(std::string url, std::string  post_data) {
 		req_param = request.str();
 
 		YDLE_DEBUG << "POST Param" << post_data;
-		data << post_data << "\r\n\r\n";
+		//data << post_data << "\r\n\r\n";
 
 		curl_easy_setopt(curl, CURLOPT_URL, req_param.c_str());
 		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, data.str().c_str());
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data.c_str());
 		curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, error_buf);
 		curl_easy_setopt(curl, CURLOPT_FAILONERROR, 1L);
 
