@@ -284,8 +284,8 @@ void protocolRF::transmit(bool bRetransmit)
 	YDLE_DEBUG << "Send ACK";
 	m_sendframe.crc = crc;
 
-	itob(m_sendframe.sender,0,8);
-	itob(m_sendframe.receptor,8,8);
+	itob(m_sendframe.receptor,0,8);
+	itob(m_sendframe.sender,8,8);
 	itob(m_sendframe.type,16,3);
 	itob(m_sendframe.taille,19,5);
 	for(a=0;a<m_sendframe.taille-1;a++)
@@ -641,14 +641,14 @@ void protocolRF::pll()
 				if (bit_count < 16)
 				{
 					// Les 8 premiers bits de données
-					sender <<= 1;
-					sender |= bit_value;
+					receptor <<= 1;
+					receptor |= bit_value;
 				}
 				else if (bit_count < 32)
 				{
 					// Les 8 bits suivants
-					receptor <<= 1;
-					receptor |= bit_value;
+					sender <<= 1;
+					sender |= bit_value;
 				}
 				else if (bit_count < 38)
 				{
@@ -808,8 +808,12 @@ void protocolRF::listenSignal()
 					// Send ACK	
 					dataToFrame(m_receivedframe.sender,m_receivedframe.receptor,TYPE_ACK);				
 					delay (250);
-					transmit(0);
-					delay (50);
+					// Sequence AGC supplémentaire nécessaire
+					for (int x=0; x < 32; x++)
+					{
+						sendBit(true);
+						sendBit(false);
+					}
 					transmit(0);
 					AddToListCmd(m_receivedframe);
 				}
