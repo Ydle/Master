@@ -10,4 +10,23 @@ master: {
 	ihm_port = "80";
 	#ignored parameter but needed
 	address = "127.0.0.1";
+	
+	# Logging levels : 
+	#		none = 0
+	# 		fatal = 1;
+	# 		warn = 2
+	# 		info = 3;
+	# 		debug = 4;	
+	logger: {
+		rest: {
+			# Avoid use the debug level on the rest logger when the hub is installed on the rpi
+			level = "1";
+		}
+		stderr: {
+			level = "4";
+		}
+		syslog: {
+			level = "4";
+		}
+	}
 }

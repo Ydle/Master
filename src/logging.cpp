@@ -79,14 +79,14 @@ void IncrementLogLevel() {
 bool InitLoggingFromFlags() {
   LogDestination *destination;
   if (true) { // FLAGS_syslog
-    SyslogDestination *syslog_dest = new SyslogDestination();
+    SyslogDestination *syslog_dest = new SyslogDestination(ydle::YDLE_LOG_NONE);
     if (!syslog_dest->Init()) {
       delete syslog_dest;
       return false;
     }
     destination = syslog_dest;
   } else {
-    destination = new StdErrorLogDestination();
+    destination = new StdErrorLogDestination(ydle::YDLE_LOG_WARN);
   }
 
   log_level log_level = ydle::YDLE_LOG_WARN;
@@ -120,14 +120,14 @@ bool InitLoggingFromFlags() {
 bool InitLogging(log_level level, log_output output) {
   LogDestination *destination;
   if (output == YDLE_LOG_SYSLOG) {
-    SyslogDestination *syslog_dest = new SyslogDestination();
+    SyslogDestination *syslog_dest = new SyslogDestination(level);
     if (!syslog_dest->Init()) {
       delete syslog_dest;
       return false;
     }
     destination = syslog_dest;
   } else if (output == YDLE_LOG_STDERR) {
-    destination = new StdErrorLogDestination();
+    destination = new StdErrorLogDestination(ydle::YDLE_LOG_WARN);
   } else {
     destination = NULL;
   }
@@ -164,9 +164,9 @@ void LogLine::Write() {
   if (m_stream.str().length() == m_prefix_length)
     return;
 
-  if (m_level > logging_level)
+ /* if (m_level > logging_level)
     return;
-
+*/
   string line = m_stream.str();
 
   if (line.at(line.length() - 1) != '\n')
@@ -176,15 +176,45 @@ void LogLine::Write() {
 }
 /**@endcond*/
 
+
+LogDestination::LogDestination(log_level l){
+	this->_level = l;
+}
+
+void LogDestination::setLevel(log_level level){
+	switch(level){
+		case ydle::YDLE_LOG_INFO:
+			this->_level = ydle::YDLE_LOG_INFO;
+			break;
+		case ydle::YDLE_LOG_FATAL:
+			this->_level = ydle::YDLE_LOG_FATAL;
+			break;
+		case ydle::YDLE_LOG_WARN:
+			this->_level = ydle::YDLE_LOG_WARN;
+			break;
+		case ydle::YDLE_LOG_DEBUG:
+			this->_level = ydle::YDLE_LOG_DEBUG;
+			break;
+		default:
+			this->_level = ydle::YDLE_LOG_NONE;
+			break;
+	}
+}
 /**
  * @addtogroup logging
  * @{
  */
 void StdErrorLogDestination::Write(log_level level, const string &log_line) {
-  std::cerr << log_line;
-  (void) level;
+	if(level <= this->_level){
+		std::cerr << log_line;
+		(void) level;
+	}
 }
 
+StdErrorLogDestination::StdErrorLogDestination(log_level level) : LogDestination(level){
+}
+
+SyslogDestination::SyslogDestination(log_level l) : LogDestination(l){};
 
 bool SyslogDestination::Init() {
   return true;

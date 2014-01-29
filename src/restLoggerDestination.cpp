@@ -15,7 +15,7 @@
 
 namespace ydle {
 
-restLoggerDestination::restLoggerDestination(std::string hub_url){
+restLoggerDestination::restLoggerDestination(log_level level, std::string hub_url) : LogDestination(level){
 	this->hub_url = hub_url;
 	this->stop = false;
 }
@@ -101,11 +101,13 @@ size_t restLoggerDestination::responseCallback( char *response, size_t size, siz
 
 
 void restLoggerDestination::Write(log_level level, const string &log_line){
-	log_message m;
-	m.level = level;
-	m.log_line = log_line;
-	this->queue_mutex.lock();
-	this->messages.push(m);
-	this->queue_mutex.unlock();
+	if(level <= this->_level){
+		log_message m;
+		m.level = level;
+		m.log_line = log_line;
+		this->queue_mutex.lock();
+		this->messages.push(m);
+		this->queue_mutex.unlock();
+	}
 }
 } /* namespace ydle */

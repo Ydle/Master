@@ -133,7 +133,9 @@ void exit_handler(int s) {
 // ----------------------------------------------------------------------------
 int main(int argc, char** argv) {
 	// Init logging system
-	ydle::StdErrorLogDestination *stderr_log = new ydle::StdErrorLogDestination();
+	ydle::StdErrorLogDestination *stderr_log =
+			new ydle::StdErrorLogDestination(ydle::YDLE_LOG_DEBUG);
+
 	ydle::InitLogging(ydle::YDLE_LOG_DEBUG, stderr_log);
 
 	// Parse command line and config file
@@ -160,6 +162,9 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 
+	// Config read ok, adjust the log level according to the user configuration
+	stderr_log->setLevel(atoi(master_config["log_stderr_level"].c_str()));
+
 	struct sigaction sigIntHandler;
 	sigIntHandler.sa_handler = exit_handler;
 	sigemptyset(&sigIntHandler.sa_mask);
@@ -168,11 +173,14 @@ int main(int argc, char** argv) {
 
 	std::stringstream ihm;
 	ihm << master_config["ihm_address"] << ":" << master_config["ihm_port"];
-	ydle::restLoggerDestination *restLog = new ydle::restLoggerDestination(ihm.str());
+	ydle::restLoggerDestination *restLog =
+			new ydle::restLoggerDestination(
+					(ydle::log_level)atoi(master_config["log_rest_level"].c_str()),
+					ihm.str()
+			);
 	restLog->Init();
 
 	ydle::InitLogging(ydle::YDLE_LOG_DEBUG, restLog);
-
 
 	//log("Program start");
 	YDLE_DEBUG << "Program start";

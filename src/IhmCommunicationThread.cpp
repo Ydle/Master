@@ -27,7 +27,7 @@ IhmCommunicationThread::~IhmCommunicationThread() {
 }
 
 void IhmCommunicationThread::run(){
-	YDLE_DEBUG << "Start Communication thread";
+	YDLE_INFO << "Start Communication thread";
 	protocolRF::Frame_t frame;
 	int size;
 

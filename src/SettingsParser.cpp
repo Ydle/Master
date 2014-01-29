@@ -124,6 +124,7 @@ std::map<std::string, std::string> SettingsParser::getConfig(){
 	string port, tx_pin, rx_pin, ihm_address, ihm_port;
 	string listen_address;
 
+	string rest_level, stderr_level;
 	if(this->g_configuration->lookupValue("master.port", port)
 		 && this->g_configuration->lookupValue("master.address", listen_address)
 		 && this->g_configuration->lookupValue("master.rx_pin", rx_pin)
@@ -137,12 +138,22 @@ std::map<std::string, std::string> SettingsParser::getConfig(){
 		conf.insert( std::pair<string, string>("tx_pin", tx_pin));
 		conf.insert( std::pair<string, string>("ihm_address", ihm_address));
 		conf.insert( std::pair<string, string>("ihm_port", ihm_port));
-		return conf;
 	}else{
 		std::cout << "Error...." << std::endl;
-		return conf;
+	}
+	if(this->g_configuration->lookupValue("master.logger.rest.level", rest_level)){
+		conf.insert( std::pair<string, string>("log_rest_level", rest_level));
+	} else {
+		conf.insert( std::pair<string, string>("log_rest_level", "1"));
 	}
 
+	if(this->g_configuration->lookupValue("master.logger.stderr.level", stderr_level)){
+		conf.insert( std::pair<string, string>("log_stderr_level", stderr_level));
+	} else {
+		conf.insert( std::pair<string, string>("log_stderr_level", "1"));
+	}
+
+	return conf;
 }
 
 int SettingsParser::writeConfigFile(){

@@ -131,6 +131,7 @@ typedef enum {
  */
 class LogDestination {
  public:
+	LogDestination(log_level l);
     /**
      * @brief Destructor
      */
@@ -142,6 +143,9 @@ class LogDestination {
      * destination
      */
     virtual void Write(log_level level, const string &log_line) = 0;
+    void setLevel(log_level level);
+protected:
+    ydle::log_level _level;
 };
 
 /**
@@ -149,6 +153,7 @@ class LogDestination {
  */
 class StdErrorLogDestination: public LogDestination {
  public:
+	StdErrorLogDestination(log_level level);
     /**
      * @brief Writes a messages out to stderr.
      */
@@ -160,6 +165,7 @@ class StdErrorLogDestination: public LogDestination {
  */
 class SyslogDestination: public LogDestination {
  public:
+	SyslogDestination(log_level l);
     /**
      * @brief Initialize the SyslogDestination
      */
@@ -170,7 +176,6 @@ class SyslogDestination: public LogDestination {
      * @note This is syslog on *nix or the event log on windows.
      */
     void Write(log_level level, const string &log_line);
- private:
 };
 
 /**@}*/
