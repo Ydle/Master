@@ -21,9 +21,8 @@ struct log_message{
 };
 
 public:
-	restLoggerDestination(std::string hub_url);
+	restLoggerDestination(log_level level, std::string hub_url);
 	static size_t responseCallback( char *response, size_t size, size_t nmemb, void *userdata);
-
    /**
     * @brief Initialize the restLoggerDestination
     */
@@ -42,6 +41,7 @@ private:
    bool stop;
    std::string hub_url;
    std::mutex queue_mutex;
+   log_level level;
 };
 
 } /* namespace ydle */
