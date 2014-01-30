@@ -6,6 +6,7 @@
  */
 #include <queue>
 #include <mutex>
+#include "jsoncpp/json/json.h"
 #include "logging.h"
 
 #ifndef RESTLOGGER_H_
@@ -37,11 +38,11 @@ public:
 private:
 
    void Sending(log_message & message);
+   void Sending(Json::Value & message);
    std::queue<log_message> messages;
    bool stop;
    std::string hub_url;
    std::mutex queue_mutex;
-   log_level level;
 };
 
 } /* namespace ydle */
