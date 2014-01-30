@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <time.h>
 #include <wiringPi.h>
 
 #include "logging.h"
@@ -760,6 +761,7 @@ void protocolRF::listenSignal()
 {
 	int err = 0;
 	scheduler_realtime();
+	timespec time;
 
 	while(1)
 	{
@@ -767,9 +769,12 @@ void protocolRF::listenSignal()
 		//  *-------  1 CAS, on calcul le temps a attendre entre 2 lecture ------
 		int tempo=(t_start + (sample_count * f_bit)) -micros() -2;
 
-		if(tempo<5) tempo=5; // la fonction delayMicroseconds n'aime pas la valeur negative
-
-		delayMicroseconds(tempo);		
+		if(tempo<5) {
+			tempo=5; // la fonction delayMicroseconds n'aime pas la valeur negative
+		}
+		time.tv_sec = 0;
+		time.tv_nsec = tempo * 1000;
+		nanosleep(&time, NULL);
 
 		// try to received ONLY if we are not currently sending something
 		err=pthread_mutex_lock(&g_mutexSynchro);
