@@ -163,7 +163,7 @@ int main(int argc, char** argv) {
 	}
 
 	// Config read ok, adjust the log level according to the user configuration
-	stderr_log->setLevel(atoi(master_config["log_stderr_level"].c_str()));
+	stderr_log->setLevel((ydle::log_level)atoi(master_config["log_stderr_level"].c_str()));
 
 	struct sigaction sigIntHandler;
 	sigIntHandler.sa_handler = exit_handler;
