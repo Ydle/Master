@@ -23,7 +23,7 @@ IhmCommunicationThread::IhmCommunicationThread(std::string web_adress, list<prot
 }
 
 IhmCommunicationThread::~IhmCommunicationThread() {
-	// TODO Auto-generated destructor stub
+
 }
 
 void IhmCommunicationThread::run(){
@@ -51,9 +51,10 @@ void IhmCommunicationThread::run(){
 				}
 			}
 		}
-		sleep(1);
+		std::this_thread::sleep_for(std::chrono::seconds(1));
 	}
 }
+
 int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 	std::string  post_data;
 	std::stringstream buf;
@@ -67,11 +68,9 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 	RestBrowser browser(this->web_address);
 	std::stringstream request;
 	request << "/api/node/data";
-	buf << "sender=" <<  sender << "&type=" << type << "&data=" << value << "\r\n" ;
 
 	browser.doPost(request.str(), buf.str());
-	YDLE_DEBUG << "Url :" << request.str();
-	YDLE_DEBUG << "    buf :" << buf.str();
+
 
 	return 1;
 }
