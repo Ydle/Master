@@ -113,7 +113,8 @@ public:
 	// Envoie des verrous et des bits formant une trame
 	void transmit(bool bRetransmit = false);
 	uint8_t computeCrc(Frame_t* frame);
-
+	int extractData(int position, float & data);
+	int extractData(int position, int & data);
 protected:
 
 	// Permet l'initialisation du node

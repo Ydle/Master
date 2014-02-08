@@ -8,6 +8,7 @@
 #include <wiringPi.h>
 
 #include "logging.h"
+#include "half.h"
 
 using namespace std;
 
@@ -165,57 +166,32 @@ void protocolRF::initialisation()
 	transmissionType = 0;
 	initializedState = false;
 
-
-
 	memset(start_bit2,0,sizeof(start_bit2));
 	start_bit2[1]=true;
 	start_bit2[6]=true;
 
-
 	debugActivated = false;
-
 	m_sample_value = 0;
-
 	sample_count = 1;
-
 	last_sample_value = 0;
-
 	pll_ramp = 0;
-
 	sample_sum = 0;
-
 	rx_bits = 0;
-
 	t_start = 0;
-
 	rx_active = 0;
-
 	speed = 1000;
-
 	t_per = 1000000/speed;
-
 	f_bit = t_per/8;
-
 	bit_value = 0;
-
 	bit_count = 0;
-
 	sender = 0;
-
 	receptor = 0;
-
 	type = 0;
-
 	parite = false;
-
 	taille = 0;
-
 	memset(m_data,0,sizeof(m_data));
-
 	rx_bytes_count = 0;
-
 	length_ok = 0;
-
 	m_rx_done = 0;
 }
 
@@ -338,6 +314,30 @@ void protocolRF::transmit(bool bRetransmit)
 
 	//unLock reception when we finished
 	pthread_mutex_unlock(&g_mutexSynchro);
+}
+
+//TODO: Manque la gestion des erreurs!
+
+int protocolRF::extractData(int position, float & data){
+	uint8_t* ptr;
+	union _FP16 half;
+	union _FP32 result;
+
+	half.u =  (m_receivedframe.data[position] << 8) | m_receivedframe.data[position+1];
+	for(int i = 16; i>=0; --i){
+		bool t = (1<<i) & half.u;
+		std::cout << t;
+	}
+	result = half_to_float_full(half);
+	data = result.f;
+	return 0;
+}
+
+int protocolRF::extractData(int position, int & data){
+	uint16_t b;
+	b = (m_receivedframe.data[position] << 8) | m_receivedframe.data[position+1];
+	data = b;
+	return 0;
 }
 
 // ----------------------------------------------------------------------------
@@ -553,7 +553,6 @@ void protocolRF::addData(int type,int data)
 			YDLE_WARN << "invalid trame len in addData";
 		break;	
 	}
-
 }
 
 
@@ -581,7 +580,6 @@ void protocolRF::pll()
 	// On vérifie s'il y a eu une transition de bit
 	if (m_sample_value != last_sample_value)
 	{
-
 		// Transition, en avance si la rampe > 40, en retard si < 40
 		if(pll_ramp < 80)
 		{
@@ -720,6 +718,11 @@ void protocolRF::pll()
 				else
 				{
 					m_rx_done = true;
+					float test;int test2;
+					this->printFrame(m_receivedframe);
+					this->extractData(0, test);
+					this->extractData(2, test2);
+					YDLE_DEBUG << "Value received :" << test << " " << test2;
 				}
 				length_ok = 0;
 				sender = 0;
@@ -788,7 +791,6 @@ void protocolRF::listenSignal()
 			m_sample_value = digitalRead(m_pinRx);
 
 			pll();
-
 
 			// if a full signal is received
 			if(isDone())
@@ -961,9 +963,6 @@ void protocolRF::printFrame(Frame_t & trame)
 	}
 }
 
-
-
-
 // ----------------------------------------------------------------------------
 /**
 	   Routine: debugMode
@@ -977,7 +976,6 @@ void protocolRF::debugMode()
 {
 	debugActivated = true;
 }
-
 
 // ----------------------------------------------------------------------------
 /**

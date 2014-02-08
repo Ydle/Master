@@ -172,6 +172,7 @@ size_t RestBrowser::responseToJsonObjectCallback( char *response, size_t size, s
 	    // report to the user the failure and their locations in the document.
 	    YDLE_WARN  << "Failed to parse configuration\n"
 	               << reader.getFormatedErrorMessages();
+	    YDLE_DEBUG << response;
 	}
 
 	return realsize;

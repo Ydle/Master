@@ -1,5 +1,6 @@
 bin_PROGRAMS=ydlemaster
 ydlemaster_SOURCES=master.cpp master.h \
+					half.cpp half.h \
 					logging.cpp logging.h \
 					restLoggerDestination.cpp restLoggerDestination.h \
 					IhmCommunicationThread.cpp IhmCommunicationThread.h \
