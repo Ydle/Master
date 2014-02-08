@@ -718,11 +718,11 @@ void protocolRF::pll()
 				else
 				{
 					m_rx_done = true;
-					float test;int test2;
+					/*float test;int test2;
 					this->printFrame(m_receivedframe);
 					this->extractData(0, test);
 					this->extractData(2, test2);
-					YDLE_DEBUG << "Value received :" << test << " " << test2;
+					YDLE_DEBUG << "Value received :" << test << " " << test2;*/
 				}
 				length_ok = 0;
 				sender = 0;
