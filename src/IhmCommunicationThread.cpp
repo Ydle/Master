@@ -70,10 +70,10 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 		case 2:
 		case 3 :
 		case 4 :
-			value=ivalue*.1;
+			value=valueInt*.1;
 			break;
 		case 7:
-			value=ivalue*(100/4095.0);
+			value=(2*valueInt+1)*(81.9);
 			break;
 	}			
 	YDLE_DEBUG << "Data received : From "<< sender << " Type : "<< type << " Value : " << value << "\n";
