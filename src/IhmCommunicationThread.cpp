@@ -58,11 +58,24 @@ void IhmCommunicationThread::run(){
 int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 	std::string  post_data;
 	std::stringstream buf;
-	int value;int type;int sender;
+	int valueInt;int type;int sender;float value;
 
 	sender = (int)frame.sender;
 	// TODO: Need a better method to get the data
-	this->extractData(frame, 1, type, value);
+	this->extractData(frame, 1, type, valueInt);
+	//Reconversion valueInt->value
+	value=valueInt;
+	switch(type)
+	{
+		case 2:
+		case 3 :
+		case 4 :
+			value=ivalue*.1;
+			break;
+		case 7:
+			value=ivalue*(100/4095.0);
+			break;
+	}			
 	YDLE_DEBUG << "Data received : From "<< sender << " Type : "<< type << " Value : " << value << "\n";
 
 	RestBrowser browser(this->web_address);
@@ -134,7 +147,6 @@ int IhmCommunicationThread::extractData(protocolRF::Frame_t & frame, int index,i
 		case DATA_DEGREEC:
 		case DATA_DEGREEF :
 		case DATA_PERCENT :
-		case DATA_HUMIDITY:
 			if(*ptr&0x8)
 				bifValueisNegativ=true;
 			ivalue=(*ptr&0x07)<<8;
@@ -149,6 +161,7 @@ int IhmCommunicationThread::extractData(protocolRF::Frame_t & frame, int index,i
 			// 12 bits no signed
 		case DATA_DISTANCE:
 		case DATA_PRESSION:
+		case DATA_HUMIDITY:
 			ivalue=(*ptr&0x0F)<<8;
 			ptr++;
 			ivalue+=*ptr;
