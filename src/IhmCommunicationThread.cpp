@@ -73,7 +73,7 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 			value=valueInt*.05;
 			break;
 		case 7:
-			value=*valueInt*.025;
+			value=valueInt*.025;
 			break;
 	}			
 	YDLE_DEBUG << "Data received : From "<< sender << " Type : "<< type << " Value : " << value << "\n";
@@ -81,7 +81,7 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 	RestBrowser browser(this->web_address);
 	std::stringstream request;
 	request << "/api/node/data";
-
+	buf << "sender=" << sender << "&type=" << type << "&data=" << value << "\r\n" ;
 	browser.doPost(request.str(), buf.str());
 
 
