@@ -58,33 +58,38 @@ void IhmCommunicationThread::run(){
 int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 	std::string  post_data;
 	std::stringstream buf;
-	int valueInt;int type;int sender;float value;
+	int valueInt;int type;int sender;float value; int index;
 
 	sender = (int)frame.sender;
+	index = 0;
+	
 	// TODO: Need a better method to get the data
-	this->extractData(frame, 1, type, valueInt);
-	//Reconversion valueInt->value
-	value=valueInt;
-	switch(type)
+	while(this->extractData(frame, index, type, valueInt)==1)
 	{
-		case 2:
-		case 3 :
-		case 4 :
-			value=valueInt*.05;
-			break;
-		case 7:
-			value=valueInt*.025;
-			break;
-	}			
-	YDLE_DEBUG << "Data received : From "<< sender << " Type : "<< type << " Value : " << value << "\n";
+		//Reconversion valueInt->value
+		value=valueInt;
+		switch(type)
+		{
+			case 2:
+			case 3 :
+			case 4 :
+				value=valueInt*.05;
+				break;
+			case 7:
+				value=valueInt*.025;
+				break;
+		}			
+		YDLE_DEBUG << "Data received : From "<< sender << " Type : "<< type << " Value : " << value << "\n";
 
-	RestBrowser browser(this->web_address);
-	std::stringstream request;
-	request << "/api/node/data";
-	buf << "sender=" << sender << "&type=" << type << "&data=" << value << "\r\n" ;
-	browser.doPost(request.str(), buf.str());
-
-
+		RestBrowser browser(this->web_address);
+		std::stringstream request;
+		request << "/api/node/data";
+		buf << "sender=" << sender << "&type=" << type << "&data=" << value << "\r\n" ;
+		browser.doPost(request.str(), buf.str());
+		buf.str(std::string());
+		index++;
+	}
+	
 	return 1;
 }
 void IhmCommunicationThread::start(){
@@ -106,14 +111,14 @@ int IhmCommunicationThread::extractData(protocolRF::Frame_t & frame, int index,i
 	bool bEndOfData=false;
 	int  iLenOfBuffer = 0;
 	int  iModifType=0;
-	int  iNbByteRest=0;
+	int  iNbByteRest;
 
 	iLenOfBuffer=(int)frame.taille;
 	ptr=frame.data;
 
 	if(iLenOfBuffer <2) // Min 1 byte of data with the 1 bytes CRC always present, else there is no data
 		return -1;
-
+	iNbByteRest= (int)frame.taille-1;
 	while (!bEndOfData)
 	{
 		itype=(unsigned char)*ptr>>4;
@@ -185,9 +190,8 @@ int IhmCommunicationThread::extractData(protocolRF::Frame_t & frame, int index,i
 			return 1;
 
 		iCurrentValueIndex++;
-
 		if(iNbByteRest<1)
-			bEndOfData =true;;
+			bEndOfData =true;
 	}
 
 	return 0;
