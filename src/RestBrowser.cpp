@@ -19,6 +19,7 @@ RestBrowser::RestBrowser(std::string url) {
 	this->url = url;
 }
 
+
 RestBrowser::~RestBrowser() {
 	// TODO Auto-generated destructor stub
 }
@@ -173,6 +174,9 @@ size_t RestBrowser::responseToJsonObjectCallback( char *response, size_t size, s
 	    YDLE_WARN  << "Failed to parse configuration\n"
 	               << reader.getFormatedErrorMessages();
 	    YDLE_DEBUG << response;
+	}
+	if(result->get("code", 0).asInt() != 0){
+		YDLE_WARN << "Error when sending, the error is :" << result->get("result", "").asString() << std::endl;
 	}
 
 	return realsize;

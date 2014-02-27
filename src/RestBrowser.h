@@ -22,7 +22,6 @@ public:
 	// Callback function for handle the data received from a request
 	static size_t responseToJsonObjectCallback( char *ptr, size_t size, size_t nmemb, void *userdata);
 private:
-
 	std::string url;
 };
 
