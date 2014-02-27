@@ -78,6 +78,9 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 			case 7:
 				value=valueInt*.025;
 				break;
+			default:
+				YDLE_DEBUG << "Weird value type in the frame : " << type;
+				continue;
 		}			
 		YDLE_DEBUG << "Data received : From "<< sender << " Type : "<< type << " Value : " << value << "\n";
 
