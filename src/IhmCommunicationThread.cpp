@@ -70,13 +70,23 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 		value=valueInt;
 		switch(type)
 		{
-			case 2:
+			case 1 :
+				break;
+			case 2 :
+				break;
 			case 3 :
+				break;
 			case 4 :
 				value=valueInt*.05;
 				break;
-			case 7:
+			case 5 :
+				break;
+			case 6 :
+				break;
+			case 7 :
 				value=valueInt*.025;
+				break;
+			case 8 :
 				break;
 			default:
 				YDLE_DEBUG << "Weird value type in the frame : " << type;
@@ -187,6 +197,9 @@ int IhmCommunicationThread::extractData(protocolRF::Frame_t & frame, int index,i
 			ptr++;
 			iNbByteRest-=3;
 			break;
+		default :
+			YDLE_DEBUG << "Weird value type in the frame : " << iModifType;
+			return 0;
 		}
 
 		if (index==iCurrentValueIndex)
