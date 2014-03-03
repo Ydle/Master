@@ -73,8 +73,10 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 			case 1 :
 				break;
 			case 2 :
+				value=valueInt*.05;
 				break;
 			case 3 :
+				value=valueInt*.05;
 				break;
 			case 4 :
 				value=valueInt*.05;
