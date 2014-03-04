@@ -812,6 +812,7 @@ void protocolRF::listenSignal()
 				}
 				else if(m_receivedframe.type == TYPE_ETAT_ACK)
 				{
+					YDLE_DEBUG << "New State/ACK frame ready to be sent :";
 					// Send ACK	
 					dataToFrame(m_receivedframe.sender,m_receivedframe.receptor,TYPE_ACK);				
 					delay (250);
@@ -824,11 +825,22 @@ void protocolRF::listenSignal()
 					transmit(0);
 					AddToListCmd(m_receivedframe);
 				}
-				else //else send it to IHM
+				else if(m_receivedframe.type == TYPE_ETAT)
 				{
-					YDLE_DEBUG << "New frame ready to be sent :";
+					YDLE_DEBUG << "New State frame ready to be sent :";
 					printFrame(m_receivedframe);
 					AddToListCmd(m_receivedframe);
+				}
+				else if(m_receivedframe.type == TYPE_CMD)
+				{
+					YDLE_DEBUG << "New Command frame ready to be sent :";
+					printFrame(m_receivedframe);
+					AddToListCmd(m_receivedframe);
+				}
+				else
+				{
+					YDLE_DEBUG << "Bad frame, trash it :";
+					printFrame(m_receivedframe);
 				}
 			}
 
