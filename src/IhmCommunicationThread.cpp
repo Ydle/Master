@@ -98,7 +98,7 @@ int IhmCommunicationThread::putFrame(protocolRF::Frame_t & frame){
 
 		RestBrowser browser(this->web_address);
 		std::stringstream request;
-		request << "/api/node/data";
+		request << "/nodes/datas";
 		buf << "sender=" << sender << "&type=" << type << "&data=" << value << "\r\n" ;
 		browser.doPost(request.str(), buf.str());
 		buf.str(std::string());
